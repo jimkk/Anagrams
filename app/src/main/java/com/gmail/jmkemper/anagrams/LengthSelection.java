@@ -15,7 +15,6 @@ import java.io.ObjectInputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 
 public class LengthSelection extends AppCompatActivity {
 
@@ -33,7 +32,7 @@ public class LengthSelection extends AppCompatActivity {
         }
 
         assert wordLengths != null;
-        ArrayAdapter<String> array = new ArrayAdapter<String>(this, R.layout.list_element, wordLengths);
+        ArrayAdapter<String> array = new ArrayAdapter<String>(this, R.layout.length_element, wordLengths);
         assert listView != null;
         listView.setAdapter(array);
     }
@@ -64,7 +63,7 @@ public class LengthSelection extends AppCompatActivity {
         TextView textView = (TextView) view.findViewById(view.getId());
         int length = Integer.parseInt(textView.getText().toString());
         Log.d("button_pushed", Integer.toString(length));
-        Intent intent = new Intent(this, GuessingActivity.class);
+        Intent intent = new Intent(this, WordSelection.class);
         intent.putExtra(MainActivity.WORDLENGTH, length);
         startActivity(intent);
     }

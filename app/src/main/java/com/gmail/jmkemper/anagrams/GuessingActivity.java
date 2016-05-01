@@ -2,8 +2,10 @@ package com.gmail.jmkemper.anagrams;
 
 import android.content.Context;
 import android.content.Intent;
+import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -14,8 +16,10 @@ import com.google.android.gms.ads.AdView;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Random;
@@ -23,7 +27,8 @@ import java.util.Random;
 public class GuessingActivity extends AppCompatActivity {
 
     private String word;
-    private int wordLength;
+    private String anagram;
+    private int length;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,67 +37,81 @@ public class GuessingActivity extends AppCompatActivity {
 
         AdView mAdView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
+        assert mAdView != null;
         mAdView.loadAd(adRequest);
 
         Intent intent = getIntent();
-
-        wordLength = intent.getIntExtra(MainActivity.WORDLENGTH, 0);
-        if(wordLength == 0){
-            //TODO Something
-        }
-
-        try {
-            word = getRandomWord(wordLength);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        String anagramed = null;
-        do {
-            anagramed = anagramWord(word);
-        } while(anagramed.equals(word));
+        word = intent.getStringExtra(MainActivity.WORD);
+        length = word.length();
+        anagram = intent.getStringExtra(MainActivity.ANAGRAM);
 
         TextView guessWord = (TextView) findViewById(R.id.guess_word);
         assert guessWord != null;
-        guessWord.setText(anagramed);
+        guessWord.setText(anagram);
 
 
     }
 
-    private String getRandomWord(int length) throws IOException, ClassNotFoundException {
+
+    private void wordSolved() throws IOException, ClassNotFoundException {
+        Log.d("exec", "Word Solved");
         FileInputStream fis = getApplicationContext().openFileInput("wordlist.obj");
         ObjectInputStream ois = new ObjectInputStream(fis);
 
         HashMap wordList = (HashMap) ois.readObject();
 
-        ArrayList array = (ArrayList) wordList.get(length);
+        HashMap array = (HashMap) wordList.get(length);
 
-        Random r = new Random();
-        int index = r.nextInt(array.size());
-
-        return (String) array.get(index);
-    }
-
-    private String anagramWord(String word){
-        char []chararray = word.toCharArray();
-
-        Random r = new Random();
-        for(int i = chararray.length-1; i > 0; i--){
-            int index = r.nextInt(i+1);
-            char c = chararray[index];
-            chararray[index] = chararray[i];
-            chararray[i] = c;
+        for(Object wordit : array.keySet()){
+            if(word.equals(wordit)){
+                array.put(word, word);
+                break;
+            }
         }
-
-        return new String(chararray);
+        wordList.put(length, array);
+        FileOutputStream fos = getApplicationContext().openFileOutput("wordlist.obj", Context.MODE_PRIVATE);
+        ObjectOutputStream oos = new ObjectOutputStream(fos);
+        oos.writeObject(wordList);
+        oos.close();
+        fos.close();
     }
 
-    public void submit(View view){
+    private void getNextWord() throws IOException, ClassNotFoundException {
+        FileInputStream fis = getApplicationContext().openFileInput("wordlist.obj");
+        ObjectInputStream ois = new ObjectInputStream(fis);
+
+        HashMap wordList = (HashMap) ois.readObject();
+
+        HashMap array = (HashMap) wordList.get(length);
+
+        boolean foundWord = false;
+        for(Object wordIt : array.keySet()){
+            if(foundWord){
+                word = (String) wordIt;
+                anagram = (String) array.get(word);
+                length = word.length();
+                TextView textView = (TextView) findViewById(R.id.guess_word);
+                EditText guess = (EditText) findViewById(R.id.guessed_word);
+                assert textView != null;
+                textView.setText(anagram);
+                assert guess != null;
+                guess.setText("");
+                break;
+            }
+            if(word.equals(wordIt)){
+                foundWord = true;
+            }
+        }
+    }
+
+    public void submit(View view) throws IOException, ClassNotFoundException {
         TextView textView = (TextView) findViewById(R.id.guessed_word);
         assert textView != null;
         String guess = textView.getText().toString();
 
         if(guess.equals(word)) {
             textView.setText(R.string.correct);
+            wordSolved();
         } else {
             textView.setText("");
             textView.setHint(R.string.incorrect);
@@ -101,23 +120,11 @@ public class GuessingActivity extends AppCompatActivity {
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    public void newWord(View view){
-        TextView textView = (TextView) findViewById(R.id.guess_word);
-        EditText guess = (EditText) findViewById(R.id.guessed_word);
-        try {
-            word = getRandomWord(wordLength);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        String anagramed = anagramWord(word);
-        assert textView != null;
-        textView.setText(anagramed);
-        assert guess != null;
-        guess.setText("");
+    public void nextWord(View view) throws IOException, ClassNotFoundException {
+        getNextWord();
     }
 
     public void back(View view){
-        Intent intent = new Intent(this, LengthSelection.class);
-        startActivity(intent);
+        finish();
     }
 }

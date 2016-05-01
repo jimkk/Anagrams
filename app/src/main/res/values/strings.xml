@@ -1,7 +1,9 @@
 <resources>
+    //Start Screen
     <string name="app_name">Anagrams</string>
+    //Game Screen
     <string name="submit">Submit</string>
-    <string name="newword">New Word</string>
+    <string name="nextword">Next Word</string>
     <string name="back">Back</string>
     <string name="guess">Guess Word</string>
     <string name="correct">Correct!</string>
