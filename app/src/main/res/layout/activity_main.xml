@@ -25,8 +25,9 @@
         android:background="@color/background"
         android:layout_width="300sp"
         android:layout_height="200sp"
-        android:layout_centerHorizontal="true"
-        android:layout_below="@id/titleimage"
         android:src="@drawable/playbutton"
-        android:onClick="playGame"/>
+        android:onClick="playGame"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="65dp" />
 </RelativeLayout>

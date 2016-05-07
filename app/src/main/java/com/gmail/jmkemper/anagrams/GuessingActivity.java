@@ -2,12 +2,15 @@ package com.gmail.jmkemper.anagrams;
 
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -36,7 +39,10 @@ public class GuessingActivity extends AppCompatActivity {
         setContentView(R.layout.activity_guessing);
 
         AdView mAdView = (AdView) findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
+        AdRequest adRequest = new AdRequest.Builder()
+                .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                .addTestDevice("5923A48C95EA9CCB7B4DB0C244FE0890")
+                .build();
         assert mAdView != null;
         mAdView.loadAd(adRequest);
 
@@ -49,31 +55,38 @@ public class GuessingActivity extends AppCompatActivity {
         assert guessWord != null;
         guessWord.setText(anagram);
 
+        EditText editText = (EditText) findViewById(R.id.guessed_word);
+        assert editText != null;
+        editText.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View view, int i, KeyEvent keyEvent) {
+                if(keyEvent.getAction() == KeyEvent.ACTION_DOWN &&
+                        i == KeyEvent.KEYCODE_ENTER){
+                    try {
+                        submit(view);
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
 
     }
 
 
     private void wordSolved() throws IOException, ClassNotFoundException {
         Log.d("exec", "Word Solved");
-        FileInputStream fis = getApplicationContext().openFileInput("wordlist.obj");
-        ObjectInputStream ois = new ObjectInputStream(fis);
 
-        HashMap wordList = (HashMap) ois.readObject();
+        SQLiteDatabase db = openOrCreateDatabase(WordDatabase.Words.TABLE_NAME, MODE_PRIVATE, null);
+        db.execSQL(WordDatabase.SQL_SET_SOLVED(word));
+        db.close();
 
-        HashMap array = (HashMap) wordList.get(length);
-
-        for(Object wordit : array.keySet()){
-            if(word.equals(wordit)){
-                array.put(word, word);
-                break;
-            }
-        }
-        wordList.put(length, array);
-        FileOutputStream fos = getApplicationContext().openFileOutput("wordlist.obj", Context.MODE_PRIVATE);
-        ObjectOutputStream oos = new ObjectOutputStream(fos);
-        oos.writeObject(wordList);
-        oos.close();
-        fos.close();
+        Button submit = (Button) findViewById(R.id.submit_button);
+        assert submit != null;
+        submit.setEnabled(false);
     }
 
     private void getNextWord() throws IOException, ClassNotFoundException {
@@ -108,6 +121,7 @@ public class GuessingActivity extends AppCompatActivity {
         TextView textView = (TextView) findViewById(R.id.guessed_word);
         assert textView != null;
         String guess = textView.getText().toString();
+        guess = guess.toLowerCase().replaceAll(" ", "");
 
         if(guess.equals(word)) {
             textView.setText(R.string.correct);

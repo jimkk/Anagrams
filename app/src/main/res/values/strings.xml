@@ -9,4 +9,6 @@
     <string name="correct">Correct!</string>
     <string name="incorrect">Incorrect</string>
     <string name="banner_ad_unit_id">ca-app-pub-2178255451847026/3321618996</string>
+    <string name="select_word_length">Select Word Length</string>
+    <string name="select_word">Select Word</string>
 </resources>

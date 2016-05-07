@@ -1,5 +1,6 @@
 package com.gmail.jmkemper.anagrams;
 
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -10,6 +11,25 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class WordProcessor {
+
+    public static void importWords(InputStream file, SQLiteDatabase db) throws IOException {
+        InputStreamReader stream = new InputStreamReader(file);
+        BufferedReader reader = new BufferedReader(stream);
+        String word;
+        while((word = reader.readLine()) != null){
+            int length = word.length();
+            if(length > 1) {
+                try {
+                    if (db.rawQuery(WordDatabase.SQL_SELECT(word), null).getCount() == 0) {
+                        String anagramed = anagramWord(word);
+                        db.execSQL(WordDatabase.SQL_INSERT(word, length, anagramed, 0));
+                    }
+                } catch (Exception e){
+                    Log.e("exec", e.toString());
+                }
+            }
+        }
+    }
 
     public HashMap<Integer, HashMap<String, String>> processWordFile(InputStream file) throws IOException {
         HashMap<Integer, HashMap<String, String>> wordList = new HashMap<>();
@@ -37,7 +57,7 @@ public class WordProcessor {
         return wordList;
     }
 
-    private String anagramWord(String word){
+    private static String anagramWord(String word){
         char [] chararray = word.toCharArray();
 
         do {

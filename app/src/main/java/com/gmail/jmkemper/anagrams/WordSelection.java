@@ -1,6 +1,8 @@
 package com.gmail.jmkemper.anagrams;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ import java.util.Map;
 public class WordSelection extends AppCompatActivity {
 
     HashMap<String, String> scrambledWords;
+    private int length;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +33,7 @@ public class WordSelection extends AppCompatActivity {
 
         Intent intent = getIntent();
 
-        int length = intent.getIntExtra(MainActivity.WORDLENGTH, 0);
+        length = intent.getIntExtra(MainActivity.WORDLENGTH, 0);
 
         ListView listView = (ListView) findViewById(R.id.listView);
         ArrayList<String> words = null;
@@ -41,68 +44,82 @@ public class WordSelection extends AppCompatActivity {
         }
 
         assert words != null;
-        ArrayAdapter<String> array = new ArrayAdapter<>(this, R.layout.word_element, words);
+        WordListAdapter array = new WordListAdapter(getApplicationContext(), R.layout.word_element, words);
+        array.addParent(this);
         assert listView != null;
         listView.setAdapter(array);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        ListView listView = (ListView) findViewById(R.id.listView);
+        assert listView != null;
+        int index = listView.getFirstVisiblePosition();
+        View v = listView.getChildAt(0);
+        int top = (v == null) ? 0 : (v.getTop() - listView.getPaddingTop());
+        ArrayList<String> words = null;
         try {
-            for (int i = 0; i < listView.getCount(); i++) {
-                View v = listView.getChildAt(i - listView.getFirstVisiblePosition());
-                if(v == null) {
-                    Log.d("exec", "index " + i + " is null");
-                } else {
-                    TextView tv = (TextView) v.findViewById(R.id.rowTextView);
-                    if (tv.getText().toString().startsWith(" ")) {
-                        tv.setTextColor(Color.GREEN);
-                    }
-                }
+            words = getWords(length);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        assert words != null;
+        WordListAdapter array = new WordListAdapter(getApplicationContext(), R.layout.word_element, words);
+        array.addParent(this);
+        listView.setAdapter(array);
+        listView.setSelectionFromTop(index, top);
+
+
+    }
+
+    private ArrayList<String> getWords(int length) throws IOException, ClassNotFoundException {
+        ArrayList<String> words= new ArrayList<>();
+        try {
+            SQLiteDatabase db = openOrCreateDatabase(WordDatabase.Words.TABLE_NAME, MODE_PRIVATE, null);
+
+            Cursor resultSet = db.rawQuery(WordDatabase.SQL_GET_WORDS(length), null);
+            if(resultSet.getCount() == 0){
+                Log.e("exec", "Words table is empty");
+                System.exit(-1);
             }
+            resultSet.moveToFirst();
+            while(!resultSet.isLast()) {
+                String word = resultSet.getString(0);
+                String anagram = resultSet.getString(2);
+                if(resultSet.getInt(3) == 0) {
+                    words.add(anagram);
+                } else {
+                    words.add(" " +word);
+                }
+                scrambledWords.put(anagram, word);
+
+                resultSet.moveToNext();
+            }
+
+            resultSet.close();
+            db.close();
+
         } catch (Exception e){
             Log.e("exec", e.toString());
         }
-    }
-
-
-    private ArrayList<String> getWords(int length) throws IOException, ClassNotFoundException {
-        ArrayList<String> wordArray = new ArrayList<>();
-        try {
-
-            FileInputStream fis = getApplicationContext().openFileInput("wordlist.obj");
-            ObjectInputStream ois = new ObjectInputStream(fis);
-
-
-            HashMap wordList = (HashMap) ois.readObject();
-            HashMap words = (HashMap) wordList.get(length);
-
-            for (Object entry : words.entrySet()) {
-                Map.Entry e = (Map.Entry) entry;
-
-                String word = (String) e.getKey();
-                String anagramed = (String) e.getValue();
-
-                if (word.equals(anagramed)) {
-                    wordArray.add(" " + word);
-                } else {
-                    wordArray.add(anagramed);
-                }
-                scrambledWords.put(anagramed, word);
-
-            }
-
-        }catch (Exception e){
-            Log.e("exec", e.toString());
-        }
-        return wordArray;
+        Log.d("exec", "Words Processed");
+        return words;
     }
 
     public void guessWord(View view){
         TextView textView = (TextView) view.findViewById(view.getId());
         String word = textView.getText().toString();
-        Intent intent = new Intent(this, GuessingActivity.class);
-        intent.putExtra(MainActivity.WORD, scrambledWords.get(word));
-        intent.putExtra(MainActivity.ANAGRAM, word);
-        Log.d("exec", "Word: " + scrambledWords.get(word));
         Log.d("exec", "Anagram: " + word);
-        startActivity(intent);
+        if(!word.startsWith(" ")) {
+            Intent intent = new Intent(this, GuessingActivity.class);
+            intent.putExtra(MainActivity.WORD, scrambledWords.get(word));
+            intent.putExtra(MainActivity.ANAGRAM, word);
+            Log.d("exec", "Word: " + scrambledWords.get(word));
+            startActivity(intent);
+        }
 
     }
 }

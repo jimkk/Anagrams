@@ -1,6 +1,8 @@
 package com.gmail.jmkemper.anagrams;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -24,39 +26,39 @@ public class LengthSelection extends AppCompatActivity {
         setContentView(R.layout.activity_length_selection);
 
         ListView listView = (ListView) findViewById(R.id.listView);
-        ArrayList<String> wordLengths = null;
-        try {
-            wordLengths = getWordLengths();
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+        ArrayList<String> wordLengths = getWordLengths();
 
         assert wordLengths != null;
-        ArrayAdapter<String> array = new ArrayAdapter<String>(this, R.layout.length_element, wordLengths);
+        ArrayAdapter<String> array = new ArrayAdapter<>(this, R.layout.length_element, wordLengths);
         assert listView != null;
         listView.setAdapter(array);
     }
 
-    private ArrayList<String> getWordLengths() throws IOException, ClassNotFoundException {
-        ArrayList<Integer> lengths = new ArrayList<>();
+    private ArrayList<String> getWordLengths() {
+        ArrayList<String> lengths = new ArrayList<>();
+        try {
+            SQLiteDatabase db = openOrCreateDatabase(WordDatabase.Words.TABLE_NAME, MODE_PRIVATE, null);
 
-        FileInputStream fis = getApplicationContext().openFileInput("wordlist.obj");
-        ObjectInputStream ois = new ObjectInputStream(fis);
+            Cursor resultSet = db.rawQuery(WordDatabase.SQL_WORD_LENGTHS, null);
+            if(resultSet.getCount() == 0){
+                Log.e("exec", "Words table is empty");
+                System.exit(-1);
+            }
+            resultSet.moveToFirst();
+            while(!resultSet.isLast()) {
+                int length = resultSet.getInt(0);
+                lengths.add(Integer.toString(length));
+                resultSet.moveToNext();
+            }
 
-        HashMap wordList = (HashMap) ois.readObject();
+            resultSet.close();
+            db.close();
 
-        for (Object o : wordList.keySet()) {
-            int key = (int) o;
-            lengths.add(key);
+        } catch (Exception e){
+            Log.e("exec", e.toString());
         }
-        Collections.sort(lengths);
-
-        ArrayList<String> lengthsStrings = new ArrayList<>();
-        for(Integer k : lengths){
-            lengthsStrings.add(Integer.toString(k));
-        }
-
-        return lengthsStrings;
+        Log.d("exec", "Word Lengths Processed");
+        return lengths;
     }
 
     public void lengthChoice(View view){

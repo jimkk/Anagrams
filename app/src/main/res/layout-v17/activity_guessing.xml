@@ -69,7 +69,6 @@
         android:id="@+id/button4"
         android:layout_below="@+id/submit_button"
         android:layout_alignLeft="@id/submit_button"
-        android:layout_alignStart="@id/submit_button"
         android:onClick="back"/>
 
 </RelativeLayout>

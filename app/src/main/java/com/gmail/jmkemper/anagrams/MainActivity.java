@@ -3,6 +3,7 @@ package com.gmail.jmkemper.anagrams;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.database.sqlite.SQLiteDatabase;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -35,19 +36,29 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         try {
-            if(!getApplicationContext().getFileStreamPath("wordlist.obj").exists() || resetFlag){
+            if(!checkIfDatabaseExists(WordDatabase.Words.TABLE_NAME)|| resetFlag){
+                SQLiteDatabase db = openOrCreateDatabase(WordDatabase.Words.TABLE_NAME, MODE_PRIVATE, null);
+                db.execSQL(WordDatabase.SQL_DELETE);
+                db.execSQL(WordDatabase.SQL_CREATE_TABLE);
                 Log.d("exec", "No Word List Found. New one generated");
                 AssetManager assets = getAssets();
                 WordProcessor wp = new WordProcessor();
-                HashMap<Integer, HashMap<String, String>> array = wp.processWordFile(assets.open("wordlist.txt"));
-                FileOutputStream fos = getApplicationContext().openFileOutput("wordlist.obj", Context.MODE_PRIVATE);
-                ObjectOutputStream oos = new ObjectOutputStream(fos);
-                oos.writeObject(array);
-                oos.close();
-                fos.close();
+                WordProcessor.importWords(assets.open("wordlist.txt"), db);
+                //HashMap<Integer, HashMap<String, String>> array = wp.processWordFile(assets.open("wordlist.txt"));
+                //FileOutputStream fos = getApplicationContext().openFileOutput("wordlist.obj", Context.MODE_PRIVATE);
+                //ObjectOutputStream oos = new ObjectOutputStream(fos);
+                //oos.writeObject(array);
+                //oos.close();
+                //fos.close();
+            }
+            try {
+                SQLiteDatabase db = openOrCreateDatabase(WordDatabase.Words.TABLE_NAME, MODE_PRIVATE, null);
+                Log.d("exec", db.rawQuery("SELECT * FROM " + WordDatabase.Words.TABLE_NAME, null).toString());
+            } catch (Exception e){
+                Log.e("exec", e.toString());
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e("exec", e.toString());
         }
         Log.d("exec", "Processed Word List");
     }
@@ -55,5 +66,10 @@ public class MainActivity extends AppCompatActivity {
     public void playGame(View view){
         Intent intent = new Intent(this, LengthSelection.class);
         startActivity(intent);
+    }
+
+    private boolean checkIfDatabaseExists(String name){
+        File dbFile = getApplicationContext().getDatabasePath(name);
+        return dbFile.exists();
     }
 }
