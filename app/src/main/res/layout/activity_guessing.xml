@@ -28,7 +28,8 @@
         android:textSize="40sp"
         android:text=""
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true" />
+        android:layout_centerHorizontal="true"
+        android:minWidth="100sp" />
 
     <EditText
         android:layout_width="250dp"
@@ -40,7 +41,9 @@
         android:textAlignment="center"
         android:singleLine="true"
         android:textSize="30sp"
-        android:layout_margin="20dp" />
+        android:layout_margin="20dp"
+        android:focusableInTouchMode="true"
+        android:focusable="true" />
 
     <Button
         android:layout_width="200dp"
@@ -71,5 +74,17 @@
         android:layout_alignLeft="@id/submit_button"
         android:layout_alignStart="@id/submit_button"
         android:onClick="back"/>
+
+    <LinearLayout
+        android:id="@+id/guess_word_list"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_centerHorizontal="true"
+        android:gravity="center_vertical|center_horizontal"
+        android:layout_below="@+id/adView"
+        android:layout_alignBottom="@+id/guess_word">
+
+    </LinearLayout>
 
 </RelativeLayout>

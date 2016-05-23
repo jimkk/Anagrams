@@ -3,19 +3,25 @@ package com.gmail.jmkemper.anagrams;
 import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.support.annotation.IntegerRes;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+
+import org.w3c.dom.Text;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -51,9 +57,19 @@ public class GuessingActivity extends AppCompatActivity {
         length = word.length();
         anagram = intent.getStringExtra(MainActivity.ANAGRAM);
 
-        TextView guessWord = (TextView) findViewById(R.id.guess_word);
-        assert guessWord != null;
-        guessWord.setText(anagram);
+        LinearLayout guessWordList = (LinearLayout) findViewById(R.id.guess_word_list);
+        assert guessWordList != null;
+        for(char c : anagram.toUpperCase().toCharArray()) {
+            TextView letter = new TextView(this);
+            letter.setText(Character.toString(c));
+            letter.setTextSize(40);
+            letter.setTextColor(Color.DKGRAY);
+            guessWordList.addView(letter);
+        }
+
+        //TextView guessWord = (TextView) findViewById(R.id.guess_word);
+        //assert guessWord != null;
+        //guessWord.setText(anagram);
 
         EditText editText = (EditText) findViewById(R.id.guessed_word);
         assert editText != null;
@@ -72,7 +88,50 @@ public class GuessingActivity extends AppCompatActivity {
                 return false;
             }
         });
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
 
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                refreshGuessWord();
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+
+    }
+
+    private void refreshGuessWord(){
+        Log.d("exec", "Refreshed Guess Word");
+        LinearLayout guessWordList = (LinearLayout) findViewById(R.id.guess_word_list);
+        assert guessWordList != null;
+        for(int i = 0; i < guessWordList.getChildCount(); i++){
+            TextView textView = (TextView) guessWordList.getChildAt(i);
+            textView.setTextColor(Color.DKGRAY);
+        }
+        EditText editText = (EditText) findViewById(R.id.guessed_word);
+        assert editText != null;
+        String guessedWord = editText.getText().toString();
+        if(guessedWord.equals("Correct!")){
+            return;
+        }
+        for(char c : guessedWord.toUpperCase().toCharArray()){
+            for(int i = 0; i < guessWordList.getChildCount(); i++){
+                TextView textView = (TextView) guessWordList.getChildAt(i);
+                if(textView.getText().toString().equals(Character.toString(c)) &&
+                        textView.getCurrentTextColor() == Color.DKGRAY){
+                    textView.setTextColor(Color.BLUE);
+                    break;
+                }
+            }
+        }
 
     }
 
